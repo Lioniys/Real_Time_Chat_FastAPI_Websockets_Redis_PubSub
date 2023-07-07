@@ -5,6 +5,7 @@ import asyncio
 import json
 from src.schemas import PydanticMessage, Event
 from src.settings import REDIS_URL
+from src.tasks import save_message_to_db
 
 app = FastAPI()
 r = redis.from_url(REDIS_URL)
@@ -21,7 +22,7 @@ async def websocket_loop(websocket: WebSocket, pubsub):
             datetime_now = datetime.now().isoformat(timespec='minutes')
             pydantic_message = PydanticMessage(datetime=datetime_now, **data.get("message"))
             await r.publish(pydantic_message.channel, json.dumps(pydantic_message.dict()))
-            # save to db
+            save_message_to_db.delay(pydantic_message.dict())
 
 
 async def redis_pubsub_loop(websocket: WebSocket, pubsub):

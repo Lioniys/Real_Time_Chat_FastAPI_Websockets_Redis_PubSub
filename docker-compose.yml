@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  websocket:
+    container_name: websocket
+    build: .
+    command: [ "/ws_app/run.sh" ]
+    depends_on:
+      - pubsub
+    env_file:
+      - ./.env
+    ports:
+      - "8080:8080"
+
+  pubsub:
+      container_name: pubsub
+      image: redis/redis-stack
+
+  celery_broker:
+    container_name: celery_broker
+    image: redis/redis-stack
+    restart: always
+
+  worker:
+    container_name: worker
+    build: .
+    command: [ 'celery', '--workdir=./src', '-A', 'tasks', 'worker', '-l', 'INFO' ]
+    depends_on:
+      - celery_broker
+
+
+networks:
+  default:
+    name: chat-net
+    external: true
